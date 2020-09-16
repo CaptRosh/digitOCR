@@ -2,6 +2,8 @@ import numpy as np
 import scipy.io as io
 import scipy.optimize as op
 import matplotlib.pyplot as plt
+import cv2
+import PIL.Image as Image
 
 def sigmoid(z):
     return 1/(1 + np.exp(-z))
@@ -77,7 +79,18 @@ def nnGradFunction(nn_params, input_layer_size,hidden_layer_size,num_labels,X,y,
 
 def predict(theta1,theta2,X):
     row = X.shape[0]
-    num_labels = theta2.shape[0]
+
+    X = np.append(np.ones([row,1]),X,axis=1)
+    h1 = sigmoid(np.dot(X , theta1.T))
+
+    h1 = np.append(np.ones([row,1]),h1,axis=1)
+    h2 = sigmoid(np.dot(h1,theta2.T))
+    
+    return np.argmax(h2,axis=1).reshape(row,1)
+
+def test_predict(theta1,theta2,X):
+    X = X.T
+    row = X.shape[0]
 
     X = np.append(np.ones([row,1]),X,axis=1)
     h1 = sigmoid(np.dot(X , theta1.T))
@@ -97,130 +110,139 @@ data = io.loadmat("images.mat")
 X_data = data['X']
 y_data = data['y'] - 1 #To adjust for 0s mapping to 10
 
+choice = input("Do you want to train(T) the neural network, or view the Results(R)? ")
 
-row,col = X_data.shape
+if choice.lower() == 't':
+    row,col = X_data.shape
 
-fig,axis = plt.subplots(10,10,figsize=(8,8))
+    fig,axis = plt.subplots(10,10,figsize=(8,8))
 
-for i in range(10):
-    for j in range(10):
-        axis[i,j].imshow(X_data[np.random.randint(0,5000),:].reshape(20,20,order="F"))
-        axis[i,j].axis("off")
+    for i in range(10):
+        for j in range(10):
+            axis[i,j].imshow(X_data[np.random.randint(0,5000),:].reshape(20,20,order="F"),cmap='gray')
+            axis[i,j].axis("off")
 
-plt.draw()
-plt.pause(1.5)
-plt.close()
+    plt.draw()
+    plt.pause(1.5)
+    plt.close()
 
-print(f"Loading Weights...\n")
-weights = io.loadmat("weights.mat")
-theta1 = weights["Theta1"]
-theta2 = weights["Theta2"]
+    print(f"Loading Initial Weights...\n")
+    weights = io.loadmat("init_weights.mat")
+    theta1 = weights["Theta1"]
+    theta2 = weights["Theta2"]
 
-nn_params = np.append(theta1.flatten(), theta2.flatten())
+    nn_params = np.append(theta1.flatten(), theta2.flatten())
 
-init_lambda = 0
+    init_lambda = 0
 
-init_J = nnCostFunction(nn_params,input_layer,hidden_layer,num_labels,X_data,y_data,init_lambda)
-init_Grad = nnGradFunction(nn_params,input_layer,hidden_layer,num_labels,X_data,y_data,init_lambda)
+    init_J = nnCostFunction(nn_params,input_layer,hidden_layer,num_labels,X_data,y_data,init_lambda)
+    init_Grad = nnGradFunction(nn_params,input_layer,hidden_layer,num_labels,X_data,y_data,init_lambda)
 
-print(f"Cost function with lambda = 0 (from ex4weights): {init_J:0.6f}")
-print(f"This value should be about 0.287629\n")
+    print(f"Cost function with lambda = 0: {init_J:0.6f}")
 
-reg_lambda = 1
+    reg_lambda = 1
 
-reg_J = nnCostFunction(nn_params,input_layer,hidden_layer,num_labels,X_data,y_data,reg_lambda)
-reg_Grad = nnGradFunction(nn_params,input_layer,hidden_layer,num_labels,X_data,y_data,reg_lambda)
+    reg_J = nnCostFunction(nn_params,input_layer,hidden_layer,num_labels,X_data,y_data,reg_lambda)
+    reg_Grad = nnGradFunction(nn_params,input_layer,hidden_layer,num_labels,X_data,y_data,reg_lambda)
 
-print(f"Cost function with lambda = 1 (from ex4weights): {reg_J:0.6f}")
-print(f"This value should be: 0.383770\n")
+    print(f"Cost function with lambda = 1: {reg_J:0.6f}")
 
-g = sigmoidGradient(np.array([-1 ,-0.5, 0 ,0.5 ,1]))
+    g = sigmoidGradient(np.array([-1 ,-0.5, 0 ,0.5 ,1]))
 
-print(f"""Sigmoid Gradient for [-1 ,-0.5, 0 ,0.5 ,1]:
-{g[0]:.6}
-{g[1]:.6}
-{g[2]:.6}
-{g[3]:.6}
-{g[4]:.6}\n""")
-print(f"""These values should be: 
-0.196612
-0.235004
-0.250000
-0.235004
-0.196612\n""")
+    print(f"""Sigmoid Gradient for [-1 ,-0.5, 0 ,0.5 ,1]:
+    {g[0]:.6}
+    {g[1]:.6}
+    {g[2]:.6}
+    {g[3]:.6}
+    {g[4]:.6}\n""")
 
-test_theta1 = randInit(input_layer,hidden_layer)
-test_theta2 = randInit(hidden_layer,num_labels)
+    test_theta1 = randInit(input_layer,hidden_layer)
+    test_theta2 = randInit(hidden_layer,num_labels)
 
-print(f"""Gradient before regularization(first six values):
-{init_Grad[0]:.6}
-{init_Grad[1]:.6}
-{init_Grad[2]:.6}
-{init_Grad[3]:.6}
-{init_Grad[4]:.6}
-{init_Grad[5]:.6}\n""")
+    print(f"""Gradient before regularization(first six values):
+    {init_Grad[0]:.6}
+    {init_Grad[1]:.6}
+    {init_Grad[2]:.6}
+    {init_Grad[3]:.6}
+    {init_Grad[4]:.6}
+    {init_Grad[5]:.6}\n""")
 
-print(f"""These values should be:
--0.0092782524
- 0.0088991196
--0.0083601076
-0.0076281355
--0.0067479837
--0.0000030498\n""")
+    print(f"""Gradient after regularization(first six values):
+    {reg_Grad[0]:.6}
+    {reg_Grad[1]:.6}
+    {reg_Grad[2]:.6}
+    {reg_Grad[3]:.6}
+    {reg_Grad[4]:.6}
+    {reg_Grad[5]:.6}\n""")
 
-print(f"""Gradient after regularization(first six values):
-{reg_Grad[0]:.6}
-{reg_Grad[1]:.6}
-{reg_Grad[2]:.6}
-{reg_Grad[3]:.6}
-{reg_Grad[4]:.6}
-{reg_Grad[5]:.6}\n""")
+    test_params = np.append(test_theta1.flatten(),test_theta2.flatten())
+    test_lambda = 3
 
-print(f"""These values should be:
--0.009278252
-0.008899120
--0.008360108
-0.007628136
--0.006747984
--0.016767980\n""")
+    test_J = nnCostFunction(nn_params, input_layer, hidden_layer, num_labels, X_data, y_data, test_lambda)
+    test_Grad = nnGradFunction(nn_params, input_layer, hidden_layer, num_labels, X_data, y_data, test_lambda)
 
-test_params = np.append(test_theta1.flatten(),test_theta2.flatten())
-test_lambda = 3
+    print(f"Cost at debugging parameters(lambda = 3): {test_J:0.6f}")
 
-test_J = nnCostFunction(nn_params, input_layer, hidden_layer, num_labels, X_data, y_data, test_lambda)
-test_Grad = nnGradFunction(nn_params, input_layer, hidden_layer, num_labels, X_data, y_data, test_lambda)
+    print("Training Neural Network...\n")
 
-print(f"Cost at debugging parameters(lambda = 3): {test_J:0.6f}")
-print("This value should be: 0.576051\n")
+    res_params = op.fmin_cg(f=nnCostFunction,fprime=nnGradFunction,x0=test_params, args=(input_layer, hidden_layer, num_labels, X_data, y_data, test_lambda), maxiter=50)
 
-print("Training Neural Network...\n")
+    test_theta1 = res_params[:hidden_layer*(input_layer+1)].reshape(hidden_layer,input_layer+1)
+    test_theta2 = res_params[hidden_layer*(input_layer+1):].reshape(num_labels,hidden_layer+1)
 
-res_params = op.fmin_cg(f=nnCostFunction,fprime=nnGradFunction,x0=test_params, args=(input_layer, hidden_layer, num_labels, X_data, y_data, test_lambda), maxiter=50)
+    pred = predict(test_theta1,test_theta2,X_data)
 
-test_theta1 = res_params[:hidden_layer*(input_layer+1)].reshape(hidden_layer,input_layer+1)
-test_theta2 = res_params[hidden_layer*(input_layer+1):].reshape(num_labels,hidden_layer+1)
+    accuracy = np.mean(np.where(pred == y_data,1,0))
 
-pred = predict(test_theta1,test_theta2,X_data)
+    fig,axis = plt.subplots(1,1,figsize=(8,8))
 
-accuracy = np.mean(np.where(pred == y_data,1,0))
+    print(f"\nVisualizing Neural Network...\n")
 
-fig,axis = plt.subplots(1,1,figsize=(8,8))
+    print("View Examples: \n")
 
-print(f"\nVisualizing Neural Network...\n")
-# iter = 0
-# for i in range(5):
-#     for j in range(2):
-#         axis[i,j].imshow(X_data[np.random.randint(500*iter,500*(iter+1)),:].reshape(20,20,order="F"))
-#         axis[i,j].axis("off")
-#         iter += 1
+    output = predict(theta1,theta2,X_data) + 1
+    pred = {1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:0}
 
-# plt.draw()
+    print(f"The accuracy of the neural network model is: {accuracy*100:0.2f}%")
 
-test_data = X_data[np.random.randint(0,10000),:]
-ans = predict(test_theta1,test_theta2,test_data)
-axis[0,0].imshow(test_data.reshape(20,20,order="F"))
-print(ans)  
+    plt.figure()
+    while True:
+        n = np.random.randint(0,5000)
+        plt.imshow(X_data[n].reshape(20,20,order="F"),cmap='gray')
+        plt.axis("off")
+        plt.show(block=False)
+        print(f"Prediction: {pred[output[n,0]]}")
+        if input("Press enter to see another example or q to exit:\n") == 'q':
+            break
+        elif not plt.get_fignums():
+            print("Graph window closed, ending program")
+            break
+        else:
+            continue 
 
-print(f"The accuracy of the neural network model is: {accuracy*100:0.2f}%")
+elif choice.lower() == 'r':
+    print("Loading Neural Network Parameters.\n")
+    weights = io.loadmat("ref-weights.mat")
 
+    theta1 = weights["Theta1"]
+    theta2 = weights["Theta2"]  
+
+    output = predict(theta1,theta2,X_data) + 1
+    pred = {1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:0}
+
+    print("View Examples: \n")
+
+    imgname = input("Enter image name: ")
+
+    img = np.asarray(Image.open("test_imgs/"+imgname+".tiff"))
+
+    plt.imshow(img, cmap='gray')
+    plt.axis('off')
+    prediction = test_predict(theta1,theta2,img.reshape([400,1],order='F')) + 1
+    prediction = pred[prediction[0][0]]
+    plt.title(f"Prediction: {prediction}")
+    plt.draw()
+else:
+    print("Invalid input")
+    quit
 plt.show()
