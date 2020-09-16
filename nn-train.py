@@ -241,6 +241,7 @@ elif choice.lower() == 'r':
     prediction = test_predict(theta1,theta2,img.reshape([400,1],order='F')) + 1
     prediction = pred[prediction[0][0]]
     plt.title(f"Prediction: {prediction}")
+    plt.tight_layout()
     plt.draw()
 else:
     print("Invalid input")
