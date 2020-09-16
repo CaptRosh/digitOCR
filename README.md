@@ -6,4 +6,4 @@ This project is a Shallow Neural Network (which has one hidden layer) without th
 <b>images.mat</b>: Contains the training set for the neural network<br>
 <b>init_weights.mat</b>: General convention denies using zeros as initial weights, so, these are random values.<br>
 <b>ref_weights.mat</b>: Weights saved by network for fast recognition without training the network over again.<br>
-<b>test_imgs</b>: Contains .tiff format image of each class for recognition.<br>
+<b>test_imgs</b>: Contains ".tiff" format image of each class for recognition.<br>
